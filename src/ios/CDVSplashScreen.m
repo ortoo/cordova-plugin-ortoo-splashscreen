@@ -56,7 +56,7 @@
 
 - (void)observeValueForKeyPath:(NSString*)keyPath ofObject:(id)object change:(NSDictionary*)change context:(void*)context
 {
-    [self updateImage];
+    [self updateSplash];
 }
 
 - (void)createViews
@@ -76,7 +76,7 @@
     BOOL autorotateValue = (device.iPad || device.iPhone6Plus) ?
         [(CDVViewController *)self.viewController shouldAutorotateDefaultValue] :
         NO;
-    
+
     [(CDVViewController *)self.viewController setEnabledAutorotation:autorotateValue];
 
     NSString* topActivityIndicator = [self.commandDelegate.settings objectForKey:[@"TopActivityIndicator" lowercaseString]];
@@ -103,10 +103,6 @@
         | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
     [_activityView startAnimating];
 
-    // Set the frame & image later.
-    _imageView = [[UIImageView alloc] init];
-    [parentView addSubview:_imageView];
-
     id showSplashScreenSpinnerValue = [self.commandDelegate.settings objectForKey:[@"ShowSplashScreenSpinner" lowercaseString]];
     // backwards compatibility - if key is missing, default to true
     if ((showSplashScreenSpinnerValue == nil) || [showSplashScreenSpinnerValue boolValue])
@@ -119,7 +115,7 @@
     [parentView addObserver:self forKeyPath:@"frame" options:0 context:nil];
     [parentView addObserver:self forKeyPath:@"bounds" options:0 context:nil];
 
-    [self updateImage];
+    [self updateSplash];
 }
 
 - (void)hideViews
@@ -132,9 +128,9 @@
 {
     [(CDVViewController *)self.viewController setEnabledAutorotation:[(CDVViewController *)self.viewController shouldAutorotateDefaultValue]];
 
-    [_imageView removeFromSuperview];
+    [_splashView removeFromSuperview];
     [_activityView removeFromSuperview];
-    _imageView = nil;
+    _splashView = nil;
     _activityView = nil;
     _curImageName = nil;
 
@@ -146,13 +142,13 @@
 - (CDV_iOSDevice) getCurrentDevice
 {
     CDV_iOSDevice device;
-    
+
     UIScreen* mainScreen = [UIScreen mainScreen];
     CGFloat mainScreenHeight = mainScreen.bounds.size.height;
     CGFloat mainScreenWidth = mainScreen.bounds.size.width;
-    
+
     int limit = MAX(mainScreenHeight,mainScreenWidth);
-    
+
     device.iPad = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
     device.iPhone = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone);
     device.retina = ([mainScreen scale] == 2.0);
@@ -163,7 +159,7 @@
     // this is appropriate for detecting the runtime screen environment
     device.iPhone6 = (device.iPhone && limit == 667.0);
     device.iPhone6Plus = (device.iPhone && limit == 736.0);
-    
+
     return device;
 }
 
@@ -171,15 +167,15 @@
 {
     // Use UILaunchImageFile if specified in plist.  Otherwise, use Default.
     NSString* imageName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"UILaunchImageFile"];
-    
+
     NSUInteger supportedOrientations = [orientationDelegate supportedInterfaceOrientations];
-    
+
     // Checks to see if the developer has locked the orientation to use only one of Portrait or Landscape
     BOOL supportsLandscape = (supportedOrientations & UIInterfaceOrientationMaskLandscape);
     BOOL supportsPortrait = (supportedOrientations & UIInterfaceOrientationMaskPortrait || supportedOrientations & UIInterfaceOrientationMaskPortraitUpsideDown);
     // this means there are no mixed orientations in there
     BOOL isOrientationLocked = !(supportsPortrait && supportsLandscape);
-    
+
     if (imageName)
     {
         imageName = [imageName stringByDeletingPathExtension];
@@ -248,7 +244,7 @@
                 case UIInterfaceOrientationLandscapeRight:
                     imageName = [imageName stringByAppendingString:@"-Landscape"];
                     break;
-                    
+
                 case UIInterfaceOrientationPortrait:
                 case UIInterfaceOrientationPortraitUpsideDown:
                 default:
@@ -257,7 +253,7 @@
             }
         }
     }
-    
+
     return imageName;
 }
 
@@ -299,8 +295,24 @@
 }
 
 // Sets the view's frame and image.
-- (void)updateImage
+- (void)updateSplash
 {
+    if (_splashView) {
+        [_splashView removeFromSuperview];
+        _splashView = nil;
+    }
+
+    NSString *launchScreenName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"UILaunchStoryboardName"];
+
+    if (launchScreenName) {
+        UIView *launchScreenView = nil;
+        UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:launchScreenName
+                                                         bundle: nil];
+
+        UIViewController *storyboardController = [mainStoryboard instantiateInitialViewController];
+        launchScreenView = storyboardController.view;
+    }
+
     NSString* imageName = [self getImageName:[self getCurrentOrientation] delegate:(id<CDVScreenOrientationDelegate>)self.viewController device:[self getCurrentDevice]];
 
     if (![imageName isEqualToString:_curImageName])

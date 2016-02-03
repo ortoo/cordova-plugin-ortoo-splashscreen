@@ -28,12 +28,12 @@ typedef struct {
     BOOL iPhone6;
     BOOL iPhone6Plus;
     BOOL retina;
-    
+
 } CDV_iOSDevice;
 
 @interface CDVSplashScreen : CDVPlugin {
     UIActivityIndicatorView* _activityView;
-    UIImageView* _imageView;
+    UIView* _splashView;
     NSString* _curImageName;
     BOOL _visible;
 }
