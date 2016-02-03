@@ -1,6 +1,6 @@
 {
-  "name": "cordova-plugin-splashscreen",
-  "version": "3.1.1-dev",
+  "name": "cordova-plugin-ortoo-splashscreen",
+  "version": "3.1.1",
   "description": "Cordova Splashscreen Plugin",
   "cordova": {
     "id": "cordova-plugin-splashscreen",

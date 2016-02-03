@@ -120,7 +120,7 @@
 
 - (void)hideViews
 {
-    [_imageView setAlpha:0];
+    [_splashView setAlpha:0];
     [_activityView setAlpha:0];
 }
 
@@ -311,31 +311,47 @@
 
         UIViewController *storyboardController = [mainStoryboard instantiateInitialViewController];
         launchScreenView = storyboardController.view;
-    }
 
-    NSString* imageName = [self getImageName:[self getCurrentOrientation] delegate:(id<CDVScreenOrientationDelegate>)self.viewController device:[self getCurrentDevice]];
+        if (launchScreenView) {
+            _splashView = launchScreenView;
+            _splashView.frame = self.viewController.view.bounds;
+            [self.viewController.view insertSubview:_splashView belowSubview:_activityView];
+        } else {
+            NSLog(@"WARNING: No view found in launch screen storyboard named %@", launchScreenName);
+        }
+    } else {
+        NSString* imageName = [self getImageName:[self getCurrentOrientation] delegate:(id<CDVScreenOrientationDelegate>)self.viewController device:[self getCurrentDevice]];
 
-    if (![imageName isEqualToString:_curImageName])
-    {
-        UIImage* img = [UIImage imageNamed:imageName];
-        _imageView.image = img;
-        _curImageName = imageName;
-    }
+        if (![imageName isEqualToString:_curImageName])
+        {
+            UIImage* img = [UIImage imageNamed:imageName];
+            _splashView = [[UIImageView alloc] initWithImage:img];
+            _curImageName = imageName;
+        }
 
-    // Check that splash screen's image exists before updating bounds
-    if (_imageView.image)
-    {
-        [self updateBounds];
-    }
-    else
-    {
-        NSLog(@"WARNING: The splashscreen image named %@ was not found", imageName);
+        UIImageView *imageView = (UIImageView *)_splashView;
+
+        // Check that splash screen's image exists before updating bounds
+        if (imageView.image)
+        {
+            [self updateBounds];
+        }
+        else
+        {
+            NSLog(@"WARNING: The splashscreen image named %@ was not found", imageName);
+        }
+
     }
 }
 
 - (void)updateBounds
 {
-    UIImage* img = _imageView.image;
+    if (![_splashView isKindOfClass:[UIImageView class]]) {
+        return;
+    }
+
+    UIImageView *imageView = (UIImageView *)_splashView;
+    UIImage* img = imageView.image;
     CGRect imgBounds = (img) ? CGRectMake(0, 0, img.size.width, img.size.height) : CGRectZero;
 
     CGSize screenSize = [self.viewController.view convertRect:[UIScreen mainScreen].bounds fromView:nil].size;
@@ -382,8 +398,8 @@
         imgBounds.size.width *= ratio;
     }
 
-    _imageView.transform = imgTransform;
-    _imageView.frame = imgBounds;
+    _splashView.transform = imgTransform;
+    _splashView.frame = imgBounds;
 }
 
 - (void)setVisible:(BOOL)visible
@@ -431,7 +447,7 @@
 
         if (_visible)
         {
-            if (_imageView == nil)
+            if (_splashView == nil)
             {
                 [self createViews];
             }
